@@ -1,0 +1,6 @@
+*.log
+*.o
+/build
+/.vscode
+/ml_pack
+/third_party
