@@ -31,6 +31,8 @@
 
 #include "log.hpp"
 #include "lock.hpp"
+#include "ml_util.hpp"
+#include "evaluation_queue.hpp"
 
 #define LOCAL_NUMA 0
 #define CXL_NUMA 1
@@ -41,8 +43,7 @@ using std::pair;
 #include <random>
 
 // #ifdef PREDICT_ENABLED
-#include "ml_util.hpp"
-using namespace heat_prediction;
+using namespace my_ml;
 // #endif
 
 class RNG {
@@ -63,7 +64,7 @@ private:
     std::uniform_int_distribution<> dis;
 };
 
-RNG rng;
+
 
 template <typename T, size_t BlockSize = 4096>
 class MemoryPool
@@ -102,7 +103,7 @@ class MemoryPool
     const_pointer address(const_reference x) const noexcept;
 
     // Can only allocate one object at a time. n and hint are ignored
-    pointer allocate(feature_t feat={});
+    pointer allocate(int pred = LOCAL_NUMA);
     void deallocate(pointer p, size_type n = 1);
 
     size_type max_size() const noexcept;
@@ -143,9 +144,16 @@ class MemoryPool
     static_assert(BlockSize >= 2 * sizeof(slot_type_), "BlockSize too small.");
     Mutex mutex_;
 
+    //最大内存容量
+    size_type cur_local_memory_ = 0;
+    size_type max_local_memory_ = 0;
 // #ifdef PREDICT_ENABLED
-    EvaluationQueue<pointer> eq;
+    EvaluationQueue<uint64_t> eq;
+    HoeffdingTreeClassifier clf_;
+
 // #endif
+public:
+  RNG rng;
 };
 
 template <typename T, size_t BlockSize>
@@ -299,6 +307,8 @@ MemoryPool<T, BlockSize>::allocateBlock(int y_pred)
     currentSlot_ = reinterpret_cast<slot_pointer_>(body + bodyPadding);
     lastSlot_ = reinterpret_cast<slot_pointer_>
                 (newBlock + BlockSize - sizeof(slot_type_) + 1);
+
+    cur_local_memory_ += BlockSize;
   }else{
     auto ptr = numa_alloc_onnode(BlockSize,CXL_NUMA);
     DLOG_ASSERT(ptr != nullptr);
@@ -320,17 +330,16 @@ MemoryPool<T, BlockSize>::allocateBlock(int y_pred)
 
 template <typename T, size_t BlockSize>
 inline typename MemoryPool<T, BlockSize>::pointer
-MemoryPool<T, BlockSize>::allocate(feature_t feat)
+MemoryPool<T, BlockSize>::allocate(int pred)
 {
 #ifdef PREDICT_ENABLED
-  //收集特征
-  //x = 
-  //作出预测
-  int y_pred = rng();
+  int y_pred = pred;
   DLOG("y_pred = %d",y_pred);
 #elif defined USE_LOCAL
+  DLOG("USE_LOCAL");
   int y_pred = LOCAL_NUMA;
 #elif defined USE_CXL
+  DLOG("USE_CXL");
   int y_pred = CXL_NUMA;
 #else
   int y_pred = LOCAL_NUMA;
@@ -418,15 +427,25 @@ template <class... Args>
 inline typename MemoryPool<T, BlockSize>::pointer
 MemoryPool<T, BlockSize>::newElement(Args&&... args)
 {
-  //收集特征
-  //x = 
-  //作出预测
+#define PREDICT_ENABLED
 #ifdef PREDICT_ENABLED
-  feature_t feat;
-  feat.pc_ = __builtin_retuen_address(0);
-  feat.client_id_ = std::hash<std::thread::id>{}(std::this_thread::get_id());
-  pointer result = allocate(feat);
+  Feat_vec_t feat_vec(F_FEATURE_NUM);
+  feat_vec[F_PC] = reinterpret_cast<Feat_elem_t>(__builtin_return_address(0));
+  feat_vec[F_CLIENT_ID] = static_cast<Feat_elem_t>(std::hash<std::thread::id>{}(std::this_thread::get_id()));
+  auto y = clf_.predict_one(feat_vec);
+  pointer result = allocate(y);
+  auto ret = eq.enqueue(feat_vec[0], std::move(feat_vec));
+  if(ret.has_value()){
+    auto v = ret.value();
+    clf_.learn_one(v.feat_vec,v.is_hot_);
+  }
 #else
+  // auto pc_ = __builtin_return_address(0);
+  // Dl_info info;
+  // if(!dladdr(pc_, &info)){
+  //   fprintf(stderr, "dladdr error\n");
+  // };
+  // fprintf(stdout, "pc:%p, enter func: %s\n", pc_, get_funcname(info.dli_sname));
   pointer result = allocate();
 #endif
   construct<value_type>(result, std::forward<Args>(args)...);

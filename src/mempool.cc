@@ -34,6 +34,8 @@ public:
 
 int main()
 {
-  
+  MemoryPool<size_t> pool;
+  pool.newElement(0);
   return 0;
 }
+//g++ mempool.cc -std=c++17 -O0 -g  -lpthread -lnuma -finstrument-functions -ldl -rdynamic -o mempool_test -I../include
