@@ -10,38 +10,24 @@
 #include <optional>
 #include <cmath>
 #include <cstdint>
+#include "ml_util.hpp"
 
-namespace heat_prediction{
-
-constexpr static int OP_READ = 1;
-constexpr static int OP_WRITE = 2;
-
-
-//系统特征，应用特征，数据特征，控制流特征
+namespace my_ml{
 
 typedef struct EQ_item{
-    uint64_t addr_; //key
-    uint64_t pc_;
-    uint64_t last_pc_;
-    size_t size_;
-    int client_id_;
-    int core_index_;
-
-    int last_access_;
+    Feat_vec_t feat_vec;
+    uint64_t last_access_;
     double heatness_;
-    bool is_hot_;
-    /*
-    page_id_t last_addr = 0;
-    uint64_t last_func = 0;
-    */
-    // struct EQ_stat{
-    //     int last_access;
-    //     int heatness;
-    // };
-    // struct EQ_stat stat;
+    uint64_t is_hot_;
+    EQ_item(Feat_vec_t &&feat_vec, uint64_t ts) : heatness_(0), last_access_(ts), is_hot_(false){
+        this->feat_vec = std::move(feat_vec);
+    }
+    EQ_item() = default;
+    EQ_item(const EQ_item &) = default;
+    EQ_item(EQ_item &&) = default;
+    EQ_item &operator=(const EQ_item &) = default;
+    EQ_item &operator=(EQ_item &&) = default;
 } EQ_item_t, feature_t;
-
-
 
 // using eq_item = std::unordered_map<std::string, std::string>;
 
@@ -133,16 +119,16 @@ public:
     double alpha_;
     double heat_;
 
-    auto enqueue(const Key &key, EQ_item &&value) -> std::optional<EQ_item>;
+    auto enqueue(const Key &key, Feat_vec_t &&value) -> std::optional<EQ_item>;
     auto dequeue() -> std::optional<EQ_item>;
 };
 
-} // namespace heat_prediction
-namespace heat_prediction {
+} // namespace my_ml
+namespace my_ml {
 template <typename Key>
-auto EvaluationQueue<Key>::enqueue(const Key &key, EQ_item &&value) -> std::optional<EQ_item> {
-    value.last_access_ = ++ts_;
-    put_or_update(key, std::move(value));
+auto EvaluationQueue<Key>::enqueue(const Key &key, Feat_vec_t &&value) -> std::optional<EQ_item> {
+    EQ_item item(std::move(value), ++ts_);
+    put_or_update(key, std::move(item));
     std::optional<EQ_item> ret;
     if (this->size() > max_size_) {
         ret = dequeue();
@@ -159,32 +145,5 @@ auto EvaluationQueue<Key>::dequeue() -> std::optional<EQ_item> {
     return val;
 }
 };
-
-// template <typename Key>
-// class Evaluation_Queue{
-// public:
-//     Evaluation_Queue(){}
-//     Evaluation_Queue(size_t max_size,  double hot_thred, bool is_training, double alpha, double heat) :
-//         max_size_(max_size), ts_(0), hot_thred_(hot_thred), is_training_(is_training), alpha_(alpha), heat_(heat) {
-//         eq = EvaluationQueue<Key, EQ_item>();
-//     }
-//     ~Evaluation_Queue()=default;
-
-//     auto enqueue(const Key& key, const EQ_item& value) -> std::optional<EQ_item>;
-//     auto dequeue() -> std::optional<EQ_item>;
-//     auto get(const Key& key) -> std::optional<const EQ_item&>;
-
-// public:
-//     size_t max_size_;
-//     uint64_t ts_;
-//     double hot_thred_;
-//     bool is_training_;
-//     double alpha_;
-//     double heat_;
-
-// private:
-//     EvaluationQueue<Key, EQ_item> eq;
-    
-// };
 
 #endif
