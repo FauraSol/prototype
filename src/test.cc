@@ -10,6 +10,9 @@ using std::vector, std::cout, std::endl;
 int main(){
     vector<void*> addr_node0;
     vector<void*> addr_node1;
+    if (numa_available() < 0) {
+        printf("NUMA not supported\n");
+    }
     for(int i=0;i<10;i++){
         void* addr = numa_alloc_onnode(sizeof(uint64_t), 0);
         addr_node0.push_back(addr);
@@ -34,5 +37,3 @@ int main(){
     }
     return 0;
 }
-
-//g++ test.cc -std=c++17 -O0 -g  -lpthread -lnuma -o numa_access_test -I../include 
