@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-std=c++17 -c -g -Wall -fgnu-tm -lnuma -finstrument-functions -ldl -rdynamic -larmadillo -lpthread
-INCLUDES=-I../ -I/home/zsq/prototype/include/
+INCLUDES=-I../ -I../../../include
 SOURCES=$(wildcard *.cc)
 OBJECTS=$(SOURCES:.cc=.o)
 

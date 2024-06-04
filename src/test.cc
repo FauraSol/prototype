@@ -5,7 +5,7 @@
 #include "cmdline.hpp"
 #include "concurrent_hashmap.hpp"
 #include <boost/stacktrace.hpp> //-lboost_stacktrace_backtrace -ldl
-#include <armadillo>
+#include <mlpack/core.hpp>
 #include <mlpack.hpp>
 
 using std::vector, std::cout, std::endl;
