@@ -22,18 +22,27 @@ inline const char *get_funcname(const char *src) {
 
 namespace my_ml{
 
-enum feature_index : size_t{
-    //control flow info
-    F_PC,          
-    //system info 
-    F_CLIENT_ID,
-    F_LOCAL_USED_RATE,  //assume limited local mem and infinity cxl mem
+// enum feature_index : size_t{
+//     //control flow info
+//     F_PC,          
+//     //system info 
+//     F_CLIENT_ID,
+//     F_LOCAL_USED_RATE,  //assume limited local mem and infinite cxl mem
     
+//     F_FEATURE_NUM
+// };
+
+enum feature_index : arma::uword{
+    F_PAGE_ID,          
+    F_OP,
+    F_FUNCTION_ID,
+    F_SIZE,
+    F_ADDR,
+    F_PC,
     F_FEATURE_NUM
 };
-
 using Feat_elem_t = arma::uword;
-using Pred_res_t = arma::uword;
+using Pred_res_t = size_t;
 using Feat_vec_t = arma::Col<Feat_elem_t>;
 using Feat_mat_t = arma::Mat<Feat_elem_t>;
 
@@ -54,20 +63,16 @@ public:
         tree.Train(x, y);
     }
 
-    void learn_many(const std::vector<Features> &x, const std::vector<uint64_t> &y){
-        
+    void learn_many(arma::Mat<Feat_elem_t> xs, arma::Row<Pred_res_t> ys){
+        tree.Train(xs,ys,2);
     }
 
-    void learn_many(arma::Mat<Feat_elem_t> xs, arma::Row<uint64_t> ys){
-        tree.Train(xs, ys);
-    }
-
-    size_t predict_one(const Features &x){
+    Pred_res_t predict_one(const Features &x){
         //tree.Classify(x);
         return 0;
     }
 
-    size_t predict_one(Feat_vec_t x){
+    Pred_res_t predict_one(Feat_vec_t x){
         return tree.Classify(x);
     }
 

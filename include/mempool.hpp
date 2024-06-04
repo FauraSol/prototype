@@ -298,7 +298,7 @@ MemoryPool<T, BlockSize>::allocateBlock(int y_pred)
     auto ptr = numa_alloc_onnode(BlockSize,LOCAL_NUMA);
     DLOG_ASSERT(ptr != nullptr);
     data_pointer_ newBlock = reinterpret_cast<data_pointer_>(ptr);
-    DLOG("local numa allocate");
+    //DLOG("local numa allocate");
     reinterpret_cast<slot_pointer_>(newBlock)->next = currentBlock_;
     currentBlock_ = reinterpret_cast<slot_pointer_>(newBlock);
     // Pad block body to staisfy the alignment requirements for elements
@@ -336,10 +336,10 @@ MemoryPool<T, BlockSize>::allocate(int pred)
   int y_pred = pred;
   DLOG("y_pred = %d",y_pred);
 #elif defined USE_LOCAL
-  DLOG("USE_LOCAL");
+ // DLOG("USE_LOCAL");
   int y_pred = LOCAL_NUMA;
 #elif defined USE_CXL
-  DLOG("USE_CXL");
+  //DLOG("USE_CXL");
   int y_pred = CXL_NUMA;
 #else
   int y_pred = LOCAL_NUMA;
