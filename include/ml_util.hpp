@@ -22,25 +22,25 @@ inline const char *get_funcname(const char *src) {
 
 namespace my_ml{
 
-// enum feature_index : size_t{
-//     //control flow info
-//     F_PC,          
-//     //system info 
-//     F_CLIENT_ID,
-//     F_LOCAL_USED_RATE,  //assume limited local mem and infinite cxl mem
-    
-//     F_FEATURE_NUM
-// };
-
 enum feature_index : arma::uword{
-    F_PAGE_ID,          
-    F_OP,
-    F_FUNCTION_ID,
-    F_SIZE,
-    F_ADDR,
-    F_PC,
+    //control flow info
+    F_PC,          
+    //system info 
+    F_CLIENT_ID,
+    F_LOCAL_USED_RATE,  //assume limited local mem and infinite cxl mem
+    
     F_FEATURE_NUM
 };
+
+// enum feature_index : arma::uword{
+//     F_PAGE_ID,          
+//     F_OP,
+//     F_FUNCTION_ID,
+//     F_SIZE,
+//     F_ADDR,
+//     F_PC,
+//     F_FEATURE_NUM
+// };
 using Feat_elem_t = arma::uword;
 using Pred_res_t = size_t;
 using Feat_vec_t = arma::Col<Feat_elem_t>;
