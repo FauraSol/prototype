@@ -1,4 +1,4 @@
-#include "mempool.hpp"
+#include "rdma_mempool.hpp"
 
 
 using std::string;
@@ -14,12 +14,15 @@ public:
         strcpy(this->value_, value.c_str());
     }
     KVPair_for_RDMA_mempool(const char* key, const char* value){
+        assert(strlen(key) < 26);
+        assert(strlen(value) < 102);
         strcpy(this->key_, key);
         strcpy(this->value_, value);
     }
     const char* key() const { return key_; }
     const char* value() const { return value_; }
     void set_value(const char* value) { 
+        assert(strlen(value) < 102);
         strcpy(this->value_, value); 
     }
     KVPair_for_RDMA_mempool(){
@@ -44,7 +47,7 @@ protected:
         return value;
     }
 private:
-    MemoryPool<KVPair_for_RDMA_mempool> pool_;
+    RDMAMemoryPool<KVPair_for_RDMA_mempool> pool_;
 };
 void my_rdma_db::Init() {
         return ;
@@ -59,8 +62,11 @@ int main(int argc, char **argv) {
     } else {
         n = 1;
     }
-    MemoryPool<size_t> pool;
+    RDMAMemoryPool<size_t> pool;
     size_t* val;
+    RDMAEnv::init();
+    RDMAConnection::MAX_MESSAGE_BUFFER_SIZE = 64ul << 10;
+    pool.conn.connect("192.168.200.52",8765);
     auto start = std::chrono::high_resolution_clock::now();
     for (size_t i = 0; i < n; i++)
     {
@@ -72,4 +78,4 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-//g++ mempool.cc -O0 -std=c++17 -ggdb -I../include -lnuma -finstrument-functions -ldl -rdynamic -lpci -lpthread -o mempool_test
+//g++ rdma_mempool.cc -O0 -std=c++17 -ggdb -I../include -I../third_party/rdmacm-rpc -lnuma -finstrument-functions -ldl -rdynamic -L../third_party -lrdma -lrdmacm -libverbs -lpci -lpthread -o rdma_mempool_test

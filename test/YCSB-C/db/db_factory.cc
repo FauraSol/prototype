@@ -14,7 +14,10 @@
 #include "db/redis_db.h"
 #include "db/tbb_rand_db.h"
 #include "db/tbb_scan_db.h"
-#include "db/my_hybrid_db.h"
+#include "rdma_mempool.hpp"
+//#include "mempool.hpp"
+#include "db/my_rdma_db.h"
+//#include "db/my_hybrid_db.h"
 
 using namespace std;
 using ycsbc::DB;
@@ -33,8 +36,10 @@ DB* DBFactory::CreateDB(utils::Properties &props) {
     return new TbbRandDB;
   } else if (props["dbname"] == "tbb_scan") {
     return new TbbScanDB;
-  } else if (props["dbname"] == "my") {
-    return new my_hybrid_db;
-  } else return NULL;
+  // } else if (props["dbname"] == "my") {
+  //   return new my_hybrid_db;
+  } else if(props["dbname"] == "rdma"){
+    return new my_rdma_db;
+  }else return NULL;
 }
 
